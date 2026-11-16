@@ -3,3 +3,4 @@ node_modules/
 .dev.vars
 data/seed.sql
 data/*.json
+data/sample.sql

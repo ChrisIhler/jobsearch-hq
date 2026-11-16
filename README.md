@@ -45,17 +45,19 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full picture.
 - **Vanilla JS + SVG** for the pages and charts; strict Content-Security-Policy (no third-party scripts).
 - **node:test** for unit tests of the categorizer, visibility filter, event rules and loose-end logic.
 
-## Quick start
+## Use it for your own search
+
+It's built to be copied. Change six values in `wrangler.toml` (name, location, links), load the sample data, and deploy to your own free Cloudflare account. Step by step: **[docs/SETUP.md](docs/SETUP.md)**.
 
 ```bash
 npm install
 cp .dev.vars.example .dev.vars          # set ADMIN_PASSWORD, SESSION_SECRET, API_TOKEN
-npm run db:local                         # schema + seed into a local D1
-npm run dev                              # http://localhost:8787
+npm run db:sample                        # fictional data so every screen has something in it
+npm run dev                              # http://localhost:8787 and /admin
 npm test
 ```
 
-Deploying your own copy: [docs/DEPLOY.md](docs/DEPLOY.md). API reference: [docs/API.md](docs/API.md). Data model: [docs/DATA_MODEL.md](docs/DATA_MODEL.md). What's next: [docs/ROADMAP.md](docs/ROADMAP.md).
+Deploy details: [docs/DEPLOY.md](docs/DEPLOY.md). API reference: [docs/API.md](docs/API.md). Data model: [docs/DATA_MODEL.md](docs/DATA_MODEL.md). What's next: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Privacy by design
 

@@ -7,6 +7,14 @@ import publicJs from './public.js.txt';
 import adminJs from './admin.js.txt';
 
 const SESSION_COOKIE = 'jhq_session';
+
+// Owner details come from [vars] in wrangler.toml so anyone can run their own copy.
+const CONFIG_KEYS = ['OWNER_NAME', 'OWNER_FIRST_NAME', 'OWNER_LOCATION', 'GITHUB_URL', 'LINKEDIN_URL', 'REPO_URL'];
+const CONFIG_DEFAULTS = { OWNER_NAME: 'Your Name', OWNER_FIRST_NAME: 'Me', OWNER_LOCATION: 'Anywhere', GITHUB_URL: 'https://github.com', LINKEDIN_URL: 'https://www.linkedin.com', REPO_URL: 'https://github.com/ChrisIhler/jobsearch-hq' };
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+function render(html, env) {
+  return html.replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => (CONFIG_KEYS.includes(k) ? esc(env[k] || CONFIG_DEFAULTS[k]) : m));
+}
 const SESSION_HOURS = 24 * 14;
 
 const SECURITY_HEADERS = {
@@ -126,9 +134,9 @@ export default {
     const m = req.method;
     try {
       // static
-      if (m === 'GET' && path === '/') return respond(publicHtml, 'text/html; charset=utf-8');
-      if (m === 'GET' && path === '/demo') return respond(publicHtml, 'text/html; charset=utf-8');
-      if (m === 'GET' && path === '/admin') return respond(adminHtml, 'text/html; charset=utf-8', { 'X-Robots-Tag': 'noindex' });
+      if (m === 'GET' && path === '/') return respond(render(publicHtml, env), 'text/html; charset=utf-8');
+      if (m === 'GET' && path === '/demo') return respond(render(publicHtml, env), 'text/html; charset=utf-8');
+      if (m === 'GET' && path === '/admin') return respond(render(adminHtml, env), 'text/html; charset=utf-8', { 'X-Robots-Tag': 'noindex' });
       if (m === 'GET' && path === '/app.css') return respond(appCss, 'text/css; charset=utf-8', { 'Cache-Control': 'public, max-age=300' });
       if (m === 'GET' && path === '/public.js') return respond(publicJs, 'text/javascript; charset=utf-8', { 'Cache-Control': 'public, max-age=300' });
       if (m === 'GET' && path === '/admin.js') return respond(adminJs, 'text/javascript; charset=utf-8', { 'Cache-Control': 'no-store' });
@@ -142,7 +150,7 @@ export default {
       }
       if (m === 'GET' && path === '/api/demo') {
         const all = { totals: true, daily_chart: true, automation_split: true, categories: true, companies: true, pipeline: true, request_form: true };
-        return json({ ...publicSummary(demoRows(), all), demo: true }, 200, { 'Cache-Control': 'public, max-age=300' });
+        return json({ ...publicSummary(demoRows(undefined, undefined, env.OWNER_FIRST_NAME || 'Me'), all), demo: true }, 200, { 'Cache-Control': 'public, max-age=300' });
       }
       if (m === 'POST' && path === '/api/access-request') {
         const v = await getVisibility(env);

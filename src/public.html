@@ -3,23 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Chris Ihler · Job Search HQ</title>
+<title>{{OWNER_NAME}} · Job Search HQ</title>
 <meta name="description" content="A live, AI-assisted job search: how many applications, how fast, and where. Built with Claude Code and Cloudflare Workers.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@600&family=Space+Grotesk:wght@600&display=swap">
 <link rel="stylesheet" href="/app.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Cpath d='M8 22l5-6 4 3 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 </head>
-<body>
+<body data-owner="{{OWNER_FIRST_NAME}}">
 <main class="wrap">
   <div id="demo-banner" class="card" hidden style="border-color:var(--accent-2);display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap">
     <span><b>Demo with fictional data.</b> Every company and number on this page is made up to show what the dashboard does. <a href="/">See the live numbers</a>.</span>
   </div>
   <header>
-    <p class="eyebrow">Job Search HQ · Lynnwood, WA</p>
+    <p class="eyebrow">Job Search HQ · {{OWNER_LOCATION}}</p>
     <h1>An AI-assisted job search, run in the open</h1>
     <p class="lede" id="demo-lede" hidden>This is a demonstration of the dashboard using generated sample data. The companies are fictional.</p>
-    <p class="lede" id="live-lede">I'm Chris Ihler. I built a pipeline with Claude Code that scans hundreds of company job boards twice a day, tailors a resume for each role, and submits the applications that need no human judgment. The rest come to me. These numbers update after every run. <a href="/demo" id="demo-link">See the demo with sample data</a>.</p>
+    <p class="lede" id="live-lede">I'm {{OWNER_NAME}}. I built a pipeline with Claude Code that scans hundreds of company job boards twice a day, tailors a resume for each role, and submits the applications that need no human judgment. The rest come to me. These numbers update after every run. <a href="/demo" id="demo-link">See the demo with sample data</a> or <a href="{{REPO_URL}}">read the code</a>.</p>
   </header>
 
   <section id="totals" class="tiles" hidden>
@@ -30,14 +30,14 @@
   </section>
 
   <section id="daily" class="section" hidden>
-    <div class="section-head"><h2>Applications per day</h2><div class="legend"><span><i class="swatch" style="background:var(--accent)"></i>Submitted automatically</span><span><i class="swatch" style="background:var(--accent-2)"></i>Submitted by Chris</span></div></div>
+    <div class="section-head"><h2>Applications per day</h2><div class="legend"><span><i class="swatch" style="background:var(--accent)"></i>Submitted automatically</span><span><i class="swatch" style="background:var(--accent-2)"></i>Submitted by {{OWNER_FIRST_NAME}}</span></div></div>
     <div class="chart" id="daily-chart"></div>
   </section>
 
   <section id="automation" class="section" hidden>
     <div class="section-head"><h2>How the work splits</h2><span class="muted small" id="split-label"></span></div>
     <div class="split" id="split-bar" role="img"></div>
-    <p class="muted small">"Automatic" means the form needed only facts already on file. Anything needing judgment, an account, a video or an assessment is routed to Chris.</p>
+    <p class="muted small">"Automatic" means the form needed only facts already on file. Anything needing judgment, an account, a video or an assessment is routed to {{OWNER_FIRST_NAME}}.</p>
   </section>
 
   <section id="categories" class="section" hidden>
@@ -77,8 +77,8 @@
   </section>
 
   <footer>
-    <span>Built by Chris Ihler with Claude Code · Cloudflare Workers + D1</span>
-    <span><a href="https://github.com/ChrisIhler">github.com/ChrisIhler</a> · <a href="https://www.linkedin.com/in/chrisihler">LinkedIn</a></span>
+    <span>Built by {{OWNER_NAME}} with Claude Code · Cloudflare Workers + D1 · <a href="{{REPO_URL}}">Source on GitHub</a></span>
+    <span><a href="{{GITHUB_URL}}">GitHub</a> · <a href="{{LINKEDIN_URL}}">LinkedIn</a></span>
   </footer>
 </main>
 <script src="/public.js"></script>

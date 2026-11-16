@@ -127,7 +127,7 @@
         <label for="r-stage">Stage<select id="r-stage" name="stage"></select></label>
         <label for="r-tier">Tier (queued roles)<select id="r-tier" name="tier"><option value="">None</option><option value="auto">Auto-ready</option><option value="quick">Tier 1 · quick</option><option value="long">Tier 2 · takes time</option></select></label>
         <label for="r-applied">Applied date<input id="r-applied" name="applied_date" type="date"></label>
-        <label for="r-by">Submitted by<select id="r-by" name="applied_by"><option value="">—</option><option>Claude</option><option>Chris</option></select></label>
+        <label for="r-by">Submitted by<select id="r-by" name="applied_by"><option value="">—</option><option value="Claude">Claude (automatic)</option><option value="{{OWNER_FIRST_NAME}}">{{OWNER_FIRST_NAME}}</option></select></label>
         <label for="r-deadline">Deadline<input id="r-deadline" name="deadline" type="date"></label>
         <label for="r-location">Location / pay<input id="r-location" name="location" maxlength="300"></label>
         <label for="r-ats">Applied through<input id="r-ats" name="ats" maxlength="300"></label>

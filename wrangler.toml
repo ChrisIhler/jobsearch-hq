@@ -8,6 +8,15 @@ type = "Text"
 globs = ["**/*.html", "**/*.css", "**/*.txt"]
 fallthrough = true
 
+# Who the site is about. Change these for your own copy.
+[vars]
+OWNER_NAME = "Chris Ihler"
+OWNER_FIRST_NAME = "Chris"
+OWNER_LOCATION = "Lynnwood, WA"
+GITHUB_URL = "https://github.com/ChrisIhler"
+LINKEDIN_URL = "https://www.linkedin.com/in/chrisihler"
+REPO_URL = "https://github.com/ChrisIhler/jobsearch-hq"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "jobsearch-db"

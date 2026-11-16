@@ -10,7 +10,8 @@
     "test": "node --test test/*.test.js",
     "db:schema": "wrangler d1 execute jobsearch-db --remote --file=schema.sql",
     "db:seed": "node scripts/build-seed.mjs > data/seed.sql && wrangler d1 execute jobsearch-db --remote --file=data/seed.sql",
-    "db:local": "wrangler d1 execute jobsearch-db --local --file=schema.sql && node scripts/build-seed.mjs > data/seed.sql && wrangler d1 execute jobsearch-db --local --file=data/seed.sql"
+    "db:local": "wrangler d1 execute jobsearch-db --local --file=schema.sql && node scripts/build-seed.mjs > data/seed.sql && wrangler d1 execute jobsearch-db --local --file=data/seed.sql",
+    "db:sample": "wrangler d1 execute jobsearch-db --local --file=schema.sql && node scripts/build-sample.mjs > data/sample.sql && wrangler d1 execute jobsearch-db --local --file=data/sample.sql"
   },
   "devDependencies": {
     "wrangler": "^4.20.0"

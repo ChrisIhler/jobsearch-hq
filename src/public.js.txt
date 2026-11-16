@@ -1,6 +1,7 @@
 // Public page: draws only what /api/public returns (the server enforces visibility).
 (function () {
   const $ = (s) => document.querySelector(s);
+  const OWNER = document.body.dataset.owner || 'the owner';
   const fmt = new Intl.NumberFormat('en-US');
   const day = (iso, opts) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
   const el = (tag, attrs = {}, text) => { const n = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); if (text !== undefined) n.textContent = text; return n; };
@@ -46,7 +47,7 @@
         if (bw > 22) g.append(total);
         if (i % labelEvery === 0) { const lb = svgEl('text', { x: x + w / 2, y: H - 8, 'text-anchor': 'middle' }); lb.textContent = day(r.date, { month: 'short', day: 'numeric' }); svg.append(lb); }
         const show = (ev) => {
-          tip.textContent = `${day(r.date, { weekday: 'short', month: 'short', day: 'numeric' })}: ${r.auto + r.manual} (${r.auto} automatic, ${r.manual} by Chris)`;
+          tip.textContent = `${day(r.date, { weekday: 'short', month: 'short', day: 'numeric' })}: ${r.auto + r.manual} (${r.auto} automatic, ${r.manual} by ${OWNER})`;
           const bx = box.getBoundingClientRect(); const px = (ev.clientX || bx.left + x) - bx.left;
           tip.style.left = Math.min(Math.max(0, px - 80), bx.width - 230) + 'px'; tip.style.top = '0px'; tip.style.opacity = 1;
         };
@@ -67,8 +68,8 @@
     const s1 = el('span'); s1.style.width = (a.auto / total) * 100 + '%'; s1.style.background = 'var(--accent)';
     const s2 = el('span'); s2.style.width = (a.manual / total) * 100 + '%'; s2.style.background = 'var(--accent-2)';
     bar.append(s1, s2);
-    bar.setAttribute('aria-label', `${a.auto} automatic, ${a.manual} by Chris`);
-    $('#split-label').textContent = `${Math.round((a.auto / total) * 100)}% automatic · ${fmt.format(a.auto)} automatic, ${fmt.format(a.manual)} by Chris`;
+    bar.setAttribute('aria-label', `${a.auto} automatic, ${a.manual} by ${OWNER}`);
+    $('#split-label').textContent = `${Math.round((a.auto / total) * 100)}% automatic · ${fmt.format(a.auto)} automatic, ${fmt.format(a.manual)} by ${OWNER}`;
     $('#automation').hidden = false;
   }
 
@@ -109,7 +110,7 @@
         const r = await fetch('/api/access-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         const j = await r.json();
         if (!r.ok) throw new Error(j.error || 'Could not send.');
-        form.reset(); status.className = 'status ok'; status.textContent = 'Request sent. Chris will get back to you by email.';
+        form.reset(); status.className = 'status ok'; status.textContent = `Request sent. ${OWNER} will get back to you by email.`;
       } catch (err) { status.className = 'status err'; status.textContent = err.message; }
       btn.disabled = false;
     });

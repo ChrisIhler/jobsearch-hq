@@ -33,7 +33,7 @@ export const TIERS = ['auto', 'quick', 'long']; // only meaningful while stage =
 export const DEFAULT_VISIBILITY = {
   totals: true,          // headline counts (total, month, week, latest day)
   daily_chart: true,     // applications-per-day chart
-  automation_split: true,// share submitted automatically vs by Chris
+  automation_split: true,// share submitted automatically vs by the owner
   categories: true,      // breakdown by role category
   hidden_categories: [], // categories removed from every public view
   companies: false,      // list of company names
@@ -54,7 +54,7 @@ function weekStart(iso) {
 }
 
 // Builds the public payload from full rows. Exact titles, pay, notes, links and
-// the needs-Chris funnel never leave this function; only what the toggles allow.
+// the needs-you funnel never leave this function; only what the toggles allow.
 export function publicSummary(rows, visibility, today = new Date().toISOString().slice(0, 10)) {
   const v = mergeVisibility(visibility);
   const hidden = new Set(v.hidden_categories);
@@ -156,7 +156,7 @@ export function looseEnds(roles, interviews, today = new Date().toISOString().sl
 }
 
 // Deterministic fictional dataset for the public demo. Every company is invented.
-export function demoRows(today = new Date().toISOString().slice(0, 10), days = 45) {
+export function demoRows(today = new Date().toISOString().slice(0, 10), days = 45, owner = 'Chris') {
   const companies = ['Northwind Labs', 'Bluefin Analytics', 'Cedar & Pine Software', 'Harborlight AI', 'Quillstone', 'Lumen Freight', 'Pinecrest Health Tech', 'Orbitline', 'Saltwater Systems', 'Tallgrass Cloud', 'Ridgeway Payments', 'Copperleaf CRM', 'Meridian Robotics', 'Foxglove Media', 'Granite Peak Data', 'Silverbirch Learning', 'Kestrel Logistics', 'Alder Street Studio', 'Brightwater Fintech', 'Juniper Ops'];
   const titles = ['AI Implementation Specialist', 'Junior Software Engineer', 'Customer Success Manager', 'Implementation Consultant', 'Automation Engineer', 'Project Manager', 'Solutions Analyst', 'Account Manager', 'Frontend Developer', 'Operations Analyst'];
   let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -167,7 +167,7 @@ export function demoRows(today = new Date().toISOString().slice(0, 10), days = 4
     for (let k = 0; k < n; k++) {
       const title = titles[Math.floor(rnd() * titles.length)];
       const age = d;
-      const r = { company: companies[Math.floor(rnd() * companies.length)], category: categorize(title), applied_date: date, applied_by: rnd() < 0.68 ? 'Claude' : 'Chris', stage: 'applied', confirmed_at: rnd() < 0.9 ? date : null, interviews: 0 };
+      const r = { company: companies[Math.floor(rnd() * companies.length)], category: categorize(title), applied_date: date, applied_by: rnd() < 0.68 ? 'Claude' : owner, stage: 'applied', confirmed_at: rnd() < 0.9 ? date : null, interviews: 0 };
       const x = rnd();
       if (age > 5 && x < 0.16) { r.stage = 'interview'; r.interviews = 1 + Math.floor(rnd() * 3); }
       else if (age > 14 && x < 0.2) { r.stage = 'offer'; r.interviews = 3; }

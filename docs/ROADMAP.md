@@ -6,6 +6,14 @@
 3. **Post-interview prompt:** the evening agent asks for a 1–5 rating and notes on any interview that happened that day, and records them.
 4. **Custom domain:** `chrisihler.dev` (about $11 the first year) for the portfolio.
 
+## Career profile (planned core feature)
+The part that makes tailored applications possible: one verified source of truth about the person.
+- **Profile vault:** professional accounts (LinkedIn, GitHub, portfolio, job-board profiles) as links and usernames only, never passwords; master resumes and past versions; certifications and education.
+- **Work-history interview:** a guided chat that walks through each job, project and venture and asks follow-up questions (scope, numbers, tools, results, what you'd say in an interview), so nothing depends on an old resume.
+- **Fact bank:** the interview output split into small, atomic bullet points, each tagged by employer, dates, skill and role family, and marked *verified* (the person confirmed it) or *draft*. Includes screening-question answers ("years of SaaS support: 1.5") and a do-not-claim list.
+- **Resume and answer builder:** AI assembles a resume, cover letter or application answer for one posting using only verified bullets, and shows which bullet each line came from.
+- **Feeds the pipeline:** the scheduled agents read the fact bank instead of scattered documents, so every automatic application stays inside verified facts.
+
 ## Connectors worth adding
 - **LinkedIn:** there is no public API for applications. Keep using the signed-in browser for Easy Apply and read LinkedIn's confirmation emails for status.
 - **Indeed, Wellfound, Built In:** same pattern: apply in the browser, confirm by email.

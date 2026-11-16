@@ -1,0 +1,249 @@
+// Admin page: sign-in, roles CRUD with filters, companies, visibility toggles, access requests.
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+  const el = (tag, attrs = {}, text) => { const n = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); if (text !== undefined && text !== null) n.textContent = text; return n; };
+  const TIER_LABEL = { auto: 'Auto-ready', quick: 'Tier 1 · quick', long: 'Tier 2 · takes time' };
+  let META = { categories: [], stages: [], tiers: [] };
+  let ROLES = [], COMPANIES = [], editing = null;
+
+  async function api(path, opts = {}) {
+    const r = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) }, body: opts.body ? JSON.stringify(opts.body) : undefined });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401) { showLogin(); throw new Error('Signed out.'); }
+    if (!r.ok) throw new Error(j.error || 'Request failed.');
+    return j;
+  }
+  function setStatus(node, msg, kind = '') { node.className = 'status ' + kind; node.textContent = msg; }
+
+  // ---- auth ----
+  function showLogin() { $('#app').hidden = true; $('#login').hidden = false; $('#pw').focus(); }
+  async function showApp() {
+    $('#login').hidden = true; $('#app').hidden = false;
+    META = await api('/api/meta');
+    fill('#f-stage', META.stages.map((s) => [s, s])); fill('#r-stage', META.stages.map((s) => [s, s]), false);
+    fill('#f-category', META.categories.map((c) => [c, c])); fill('#r-category', META.categories.map((c) => [c, c]), false);
+    await Promise.all([loadRoles(), loadCompanies(), loadVisibility(), loadRequests(), loadOverview(), loadInterviews()]);
+  }
+  function fill(sel, pairs, keepFirst = true) {
+    const s = $(sel); if (!keepFirst) s.replaceChildren();
+    for (const [v, t] of pairs) s.append(el('option', { value: v }, t));
+  }
+  $('#login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const st = $('#login-status'); setStatus(st, 'Signing in…');
+    try {
+      const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('#pw').value }) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error);
+      $('#pw').value = ''; setStatus(st, ''); showApp();
+    } catch (err) { setStatus(st, err.message || 'Sign-in failed.', 'err'); }
+  });
+  $('#logout').addEventListener('click', async () => { await fetch('/api/logout', { method: 'POST' }); showLogin(); });
+
+  // ---- tabs ----
+  $$('[role=tab]').forEach((b) => b.addEventListener('click', () => {
+    $$('[role=tab]').forEach((x) => x.setAttribute('aria-selected', x === b ? 'true' : 'false'));
+    $$('[data-panel]').forEach((p) => (p.hidden = p.dataset.panel !== b.dataset.tab));
+    history.replaceState(null, '', '#' + b.dataset.tab);
+  }));
+  const startTab = location.hash.slice(1); if (startTab) { const b = document.querySelector(`[data-tab="${startTab}"]`); if (b) b.click(); }
+
+  // ---- roles ----
+  let filterTimer;
+  ['#f-q', '#f-stage', '#f-tier', '#f-category', '#f-from', '#f-to'].forEach((s) => $(s).addEventListener('input', () => { clearTimeout(filterTimer); filterTimer = setTimeout(loadRoles, 200); }));
+  async function loadRoles() {
+    const p = new URLSearchParams();
+    const map = { q: '#f-q', stage: '#f-stage', tier: '#f-tier', category: '#f-category', from: '#f-from', to: '#f-to' };
+    for (const [k, s] of Object.entries(map)) if ($(s).value) p.set(k, $(s).value);
+    ROLES = (await api('/api/roles?' + p)).roles;
+    const tb = $('#role-rows'); tb.replaceChildren();
+    for (const r of ROLES) {
+      const tr = el('tr', { class: 'clickable', tabindex: 0 });
+      const stage = el('td'); stage.append(el('span', { class: 'pill ' + r.stage }, r.stage));
+      if (r.stage === 'queued' && r.tier) { stage.append(document.createElement('br')); stage.append(el('span', { class: 'pill ' + r.tier }, TIER_LABEL[r.tier])); }
+      tr.append(stage, el('td', {}, r.company), el('td', {}, r.title), el('td', { class: 'muted' }, r.category), el('td', { class: 'num' }, r.applied_date || ''), el('td', {}, r.applied_by || ''), el('td', {}, r.next_step || ''), el('td', { class: 'num' }, r.deadline || ''));
+      tr.addEventListener('click', () => openRole(r)); tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') openRole(r); });
+      tb.append(tr);
+    }
+    $('#role-count').textContent = `${ROLES.length} role${ROLES.length === 1 ? '' : 's'}`;
+  }
+  const FIELDS = ['company', 'title', 'category', 'stage', 'tier', 'applied_date', 'applied_by', 'deadline', 'location', 'ats', 'url', 'next_step', 'notes'];
+  function openRole(r) {
+    editing = r ? r.id : null;
+    $('#role-dialog-title').textContent = r ? 'Edit role' : 'Add a role';
+    const f = $('#role-form');
+    for (const k of FIELDS) f.elements[k].value = r ? r[k] || '' : '';
+    if (!r) { f.elements.stage.value = 'queued'; f.elements.category.value = 'Other'; }
+    $('#r-history').hidden = !r; if (r) loadTimeline(r.id);
+    $('#r-delete').hidden = !r; $('#r-delete').textContent = 'Delete'; delete $('#r-delete').dataset.armed;
+    setStatus($('#r-status'), '');
+    $('#role-dialog').showModal();
+  }
+  $('#add-role').addEventListener('click', () => openRole(null));
+  $('#r-cancel').addEventListener('click', () => $('#role-dialog').close());
+  $('#role-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = $('#role-form'); const body = {};
+    for (const k of FIELDS) body[k] = f.elements[k].value.trim() || null;
+    if (!body.company || !body.title) { setStatus($('#r-status'), 'Company and title are required.', 'err'); return; }
+    if (!editing && body.category === 'Other') delete body.category; // let the server classify new roles
+    try {
+      if (editing) await api('/api/roles/' + editing, { method: 'PATCH', body });
+      else await api('/api/roles', { method: 'POST', body });
+      $('#role-dialog').close(); await Promise.all([loadRoles(), loadCompanies()]);
+    } catch (err) { setStatus($('#r-status'), err.message, 'err'); }
+  });
+  $('#r-delete').addEventListener('click', async () => {
+    const b = $('#r-delete');
+    if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Click again to delete'; return; }
+    try { await api('/api/roles/' + editing, { method: 'DELETE' }); $('#role-dialog').close(); loadRoles(); }
+    catch (err) { setStatus($('#r-status'), err.message, 'err'); }
+  });
+
+  // ---- timeline / events ----
+  const KIND_LABEL = { confirmation: 'Confirmation email', interview_invite: 'Interview invite', assessment: 'Assessment', rejection: 'Rejection', offer: 'Offer', follow_up: 'Follow-up', note: 'Note' };
+  async function loadTimeline(id) {
+    const { events } = await api('/api/roles/' + id);
+    const ul = $('#r-events'); ul.replaceChildren();
+    if (!events.length) ul.append(el('li', { class: 'muted' }, 'Nothing logged yet.'));
+    for (const e of events) ul.append(el('li', {}, `${e.happened_at.slice(0, 10)} · ${KIND_LABEL[e.kind] || e.kind}${e.source ? ' (' + e.source + ')' : ''}${e.detail ? ': ' + e.detail : ''}`));
+  }
+  $$('[data-log]').forEach((b) => b.addEventListener('click', async () => {
+    if (!editing) return;
+    const kind = b.dataset.log;
+    const detail = kind === 'note' || kind === 'rejection' ? ($('#r-notes').value.trim() || null) : null;
+    try {
+      await api('/api/events', { method: 'POST', body: { role_id: editing, kind, source: 'manual', detail, happened_at: new Date().toISOString().slice(0, 10) } });
+      setStatus($('#r-status'), (KIND_LABEL[kind] || kind) + ' logged.', 'ok');
+      loadTimeline(editing); loadRoles(); loadOverview(); loadInterviews();
+    } catch (err) { setStatus($('#r-status'), err.message, 'err'); }
+  }));
+
+  // ---- overview ----
+  const LE_LABEL = { needs_you_quick: 'Tier 1 · quick', needs_you_long: 'Tier 2 · takes time', no_confirmation: 'No confirmation', deadline: 'Deadline soon', prep_pending: 'Brief pending', feedback_missing: 'Add feedback' };
+  async function loadOverview() {
+    const s = await api('/api/stats');
+    const set = (attr, k, v) => { const n = document.querySelector(`[${attr}="${k}"]`); if (n) n.textContent = v; };
+    if (s.totals) { for (const k of ['total', 'month', 'week', 'latest_day']) set('data-s', k, s.totals[k]); set('data-s', 'latest_date', s.totals.latest_date || ''); }
+    if (s.pipeline) for (const k of ['queued', 'confirmed', 'interview', 'offer']) set('data-sp', k, s.pipeline[k]);
+    const { items } = await api('/api/loose-ends');
+    const tb = $('#le-rows'); tb.replaceChildren();
+    $('#le-count').textContent = `${items.length} item${items.length === 1 ? '' : 's'}`;
+    if (!items.length) { const tr = el('tr'); tr.append(el('td', { colspan: 4, class: 'muted' }, 'Nothing loose. Nice.')); tb.append(tr); }
+    for (const it of items) {
+      const src = it.role || it.interview;
+      const tr = el('tr', { class: 'clickable', tabindex: 0 });
+      const t = el('td'); t.append(el('span', { class: 'pill ' + (it.kind === 'needs_you_long' ? 'long' : it.kind === 'needs_you_quick' ? 'quick' : 'queued') }, LE_LABEL[it.kind] || it.kind));
+      tr.append(t, el('td', {}, src.company), el('td', {}, src.title), el('td', {}, it.detail));
+      const open = () => (it.role ? openRole(it.role) : openInterview(it.interview));
+      tr.addEventListener('click', open); tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
+      tb.append(tr);
+    }
+  }
+
+  // ---- interviews ----
+  let ivEditing = null;
+  async function loadInterviews() {
+    const { interviews } = await api('/api/interviews');
+    const tb = $('#iv-rows'); tb.replaceChildren();
+    if (!interviews.length) { const tr = el('tr'); tr.append(el('td', { colspan: 6, class: 'muted' }, 'No interviews yet. They appear here when email sync finds an invite or you add one from a role.')); tb.append(tr); }
+    for (const i of interviews) {
+      const tr = el('tr', { class: 'clickable', tabindex: 0 });
+      const prep = el('td'); prep.append(el('span', { class: 'pill ' + (i.prep_status === 'ready' ? 'applied' : i.prep_status === 'requested' ? 'queued' : 'closed') }, i.prep_status));
+      const out = el('td'); out.append(el('span', { class: 'pill ' + (i.outcome === 'offer' || i.outcome === 'advanced' ? 'offer' : i.outcome === 'rejected' ? 'rejected' : 'queued') }, i.outcome));
+      tr.append(el('td', { class: 'num' }, (i.scheduled_at || '').replace('T', ' ').slice(0, 16) || 'Not scheduled'), el('td', {}, i.company), el('td', {}, i.title), el('td', {}, i.round || ''), prep, out);
+      tr.addEventListener('click', () => openInterview(i)); tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') openInterview(i); });
+      tb.append(tr);
+    }
+  }
+  const IV_FIELDS = ['scheduled_at', 'round', 'format', 'interviewer', 'prep_status', 'outcome', 'rating', 'prep_notes', 'feedback'];
+  function openInterview(i) {
+    ivEditing = i.id;
+    $('#iv-title').textContent = `${i.company} · ${i.title}`;
+    const f = $('#iv-form');
+    for (const k of IV_FIELDS) f.elements[k].value = i[k] == null ? '' : String(k === 'scheduled_at' ? i[k].slice(0, 16) : i[k]);
+    setStatus($('#iv-status'), '');
+    $('#iv-dialog').showModal();
+  }
+  $('#iv-cancel').addEventListener('click', () => $('#iv-dialog').close());
+  $('#iv-request').addEventListener('click', async () => {
+    try { await api('/api/interviews/' + ivEditing, { method: 'PATCH', body: { prep_status: 'requested' } }); $('#iv-prep').value = 'requested'; setStatus($('#iv-status'), 'Requested. The next scheduled run writes a research brief here.', 'ok'); loadInterviews(); loadOverview(); }
+    catch (err) { setStatus($('#iv-status'), err.message, 'err'); }
+  });
+  $('#iv-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target; const body = {};
+    for (const k of IV_FIELDS) body[k] = f.elements[k].value === '' ? null : f.elements[k].value;
+    body.prep_status = body.prep_status || 'none'; body.outcome = body.outcome || 'pending';
+    try { await api('/api/interviews/' + ivEditing, { method: 'PATCH', body }); $('#iv-dialog').close(); loadInterviews(); loadOverview(); loadRoles(); }
+    catch (err) { setStatus($('#iv-status'), err.message, 'err'); }
+  });
+
+  // ---- companies ----
+  async function loadCompanies() {
+    COMPANIES = (await api('/api/companies')).companies;
+    const dl = $('#company-list'); dl.replaceChildren(...COMPANIES.map((c) => el('option', { value: c.name })));
+    drawCompanies();
+  }
+  function drawCompanies() {
+    const q = $('#c-filter').value.toLowerCase();
+    const tb = $('#company-rows'); tb.replaceChildren();
+    for (const c of COMPANIES.filter((c) => !q || c.name.toLowerCase().includes(q))) {
+      const tr = el('tr', { class: 'clickable', tabindex: 0, title: 'Show this company\'s roles' });
+      const site = el('td'); if (c.website) site.append(el('a', { href: c.website, target: '_blank', rel: 'noopener' }, c.website.replace(/^https?:\/\//, '')));
+      tr.append(el('td', {}, c.name), el('td', { class: 'num' }, String(c.roles)), el('td', { class: 'num' }, String(c.applied || 0)), site, el('td', { class: 'muted' }, c.notes || ''));
+      const go = () => { $('#f-q').value = c.name; document.querySelector('[data-tab="roles"]').click(); loadRoles(); };
+      tr.addEventListener('click', go); tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+      tb.append(tr);
+    }
+  }
+  $('#c-filter').addEventListener('input', drawCompanies);
+  $('#company-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await api('/api/companies', { method: 'POST', body: { name: $('#c-name').value, website: $('#c-site').value, notes: $('#c-notes').value } });
+      e.target.reset(); setStatus($('#c-status'), 'Company added.', 'ok'); loadCompanies();
+    } catch (err) { setStatus($('#c-status'), err.message, 'err'); }
+  });
+
+  // ---- visibility ----
+  async function loadVisibility() {
+    const v = await api('/api/visibility');
+    const f = $('#vis-form');
+    for (const k of ['totals', 'daily_chart', 'automation_split', 'categories', 'companies', 'pipeline', 'request_form']) f.elements[k].checked = !!v[k];
+    const box = $('#v-cats'); box.replaceChildren();
+    META.categories.forEach((c, i) => {
+      const id = 'vc-' + i;
+      const lab = el('label', { class: 'toggle', for: id }); const cb = el('input', { type: 'checkbox', id, 'data-cat': c });
+      cb.checked = !v.hidden_categories.includes(c); lab.append(cb, el('span', {}, c)); box.append(lab);
+    });
+  }
+  $('#vis-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target; const body = {};
+    for (const k of ['totals', 'daily_chart', 'automation_split', 'categories', 'companies', 'pipeline', 'request_form']) body[k] = f.elements[k].checked;
+    body.hidden_categories = $$('#v-cats input').filter((c) => !c.checked).map((c) => c.dataset.cat);
+    try { await api('/api/visibility', { method: 'PUT', body }); setStatus($('#v-status'), 'Saved. The public page updates within a minute.', 'ok'); }
+    catch (err) { setStatus($('#v-status'), err.message, 'err'); }
+  });
+
+  // ---- requests ----
+  async function loadRequests() {
+    const { requests } = await api('/api/requests');
+    const fresh = requests.filter((r) => r.status === 'new').length;
+    $('#req-badge').textContent = fresh ? `(${fresh} new)` : '';
+    const tb = $('#req-rows'); tb.replaceChildren();
+    if (!requests.length) { const tr = el('tr'); tr.append(el('td', { colspan: 6, class: 'muted' }, 'No requests yet.')); tb.append(tr); return; }
+    for (const r of requests) {
+      const tr = el('tr');
+      const st = el('td'); const sel = el('select', { 'aria-label': 'Status for ' + r.name });
+      for (const s of ['new', 'approved', 'declined']) { const o = el('option', { value: s }, s); if (s === r.status) o.selected = true; sel.append(o); }
+      sel.addEventListener('change', async () => { await api('/api/requests/' + r.id, { method: 'PATCH', body: { status: sel.value } }); loadRequests(); });
+      st.append(sel);
+      tr.append(el('td', { class: 'num' }, r.created_at.slice(0, 16)), el('td', {}, r.name), el('td', {}, r.email), el('td', {}, r.org || ''), el('td', {}, r.reason), st);
+      tb.append(tr);
+    }
+  }
+
+  fetch('/api/session').then((r) => r.json()).then((s) => (s.admin ? showApp() : showLogin())).catch(showLogin);
+})();

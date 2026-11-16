@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chris Ihler · Job Search HQ</title>
+<meta name="description" content="A live, AI-assisted job search: how many applications, how fast, and where. Built with Claude Code and Cloudflare Workers.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@600&family=Space+Grotesk:wght@600&display=swap">
+<link rel="stylesheet" href="/app.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Cpath d='M8 22l5-6 4 3 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+</head>
+<body>
+<main class="wrap">
+  <div id="demo-banner" class="card" hidden style="border-color:var(--accent-2);display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap">
+    <span><b>Demo with fictional data.</b> Every company and number on this page is made up to show what the dashboard does. <a href="/">See the live numbers</a>.</span>
+  </div>
+  <header>
+    <p class="eyebrow">Job Search HQ · Lynnwood, WA</p>
+    <h1>An AI-assisted job search, run in the open</h1>
+    <p class="lede" id="demo-lede" hidden>This is a demonstration of the dashboard using generated sample data. The companies are fictional.</p>
+    <p class="lede" id="live-lede">I'm Chris Ihler. I built a pipeline with Claude Code that scans hundreds of company job boards twice a day, tailors a resume for each role, and submits the applications that need no human judgment. The rest come to me. These numbers update after every run. <a href="/demo" id="demo-link">See the demo with sample data</a>.</p>
+  </header>
+
+  <section id="totals" class="tiles" hidden>
+    <div class="tile"><span class="label">Applications</span><span class="value num" data-k="total">—</span><span class="sub" data-k="since">—</span></div>
+    <div class="tile"><span class="label">This month</span><span class="value num" data-k="month">—</span><span class="sub" data-k="month_label">—</span></div>
+    <div class="tile"><span class="label">This week</span><span class="value num" data-k="week">—</span><span class="sub" data-k="week_label">—</span></div>
+    <div class="tile"><span class="label">Latest day</span><span class="value num" data-k="latest_day">—</span><span class="sub" data-k="latest_label">—</span></div>
+  </section>
+
+  <section id="daily" class="section" hidden>
+    <div class="section-head"><h2>Applications per day</h2><div class="legend"><span><i class="swatch" style="background:var(--accent)"></i>Submitted automatically</span><span><i class="swatch" style="background:var(--accent-2)"></i>Submitted by Chris</span></div></div>
+    <div class="chart" id="daily-chart"></div>
+  </section>
+
+  <section id="automation" class="section" hidden>
+    <div class="section-head"><h2>How the work splits</h2><span class="muted small" id="split-label"></span></div>
+    <div class="split" id="split-bar" role="img"></div>
+    <p class="muted small">"Automatic" means the form needed only facts already on file. Anything needing judgment, an account, a video or an assessment is routed to Chris.</p>
+  </section>
+
+  <section id="categories" class="section" hidden>
+    <h2>Where the applications go</h2>
+    <div class="bars" id="category-bars"></div>
+  </section>
+
+  <section id="pipeline" class="section" hidden>
+    <h2>Pipeline</h2>
+    <div class="pipeline">
+      <div class="stage queued"><div class="value num" data-p="queued">—</div><div class="muted small">Queued to apply</div></div>
+      <div class="stage"><div class="value num" data-p="applied">—</div><div class="muted small">Applied</div></div>
+      <div class="stage"><div class="value num" data-p="confirmed">—</div><div class="muted small">Confirmed by email</div></div>
+      <div class="stage"><div class="value num" data-p="interview">—</div><div class="muted small">Reached interviews</div></div>
+      <div class="stage offer"><div class="value num" data-p="offer">—</div><div class="muted small">Offers</div></div>
+    </div>
+  </section>
+
+  <section id="companies" class="section" hidden>
+    <div class="section-head"><h2>Companies</h2><span class="count" id="company-count"></span></div>
+    <div class="chips" id="company-chips"></div>
+  </section>
+
+  <section id="request" class="section" hidden>
+    <h2>Want to see more?</h2>
+    <p class="muted">Recruiters, hiring managers and collaborators can ask for a closer look at the project or the data.</p>
+    <form class="card" id="request-form" novalidate>
+      <div class="form-grid">
+        <label for="rq-name">Name<input id="rq-name" name="name" required maxlength="120" autocomplete="name"></label>
+        <label for="rq-email">Email<input id="rq-email" name="email" type="email" required maxlength="200" autocomplete="email"></label>
+        <label for="rq-org">Company (optional)<input id="rq-org" name="org" maxlength="160" autocomplete="organization"></label>
+      </div>
+      <label for="rq-reason" style="margin-top:12px">What would you like to see?<textarea id="rq-reason" name="reason" required maxlength="1500"></textarea></label>
+      <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="row-actions" style="justify-content:space-between;align-items:center"><span class="status" id="rq-status" role="status"></span><button type="submit">Send request</button></div>
+    </form>
+  </section>
+
+  <footer>
+    <span>Built by Chris Ihler with Claude Code · Cloudflare Workers + D1</span>
+    <span><a href="https://github.com/ChrisIhler">github.com/ChrisIhler</a> · <a href="https://www.linkedin.com/in/chrisihler">LinkedIn</a></span>
+  </footer>
+</main>
+<script src="/public.js"></script>
+</body>
+</html>

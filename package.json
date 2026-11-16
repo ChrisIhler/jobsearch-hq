@@ -1,0 +1,18 @@
+{
+  "name": "jobsearch-hq",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Public portfolio + private admin for an AI-assisted job search. Cloudflare Workers + D1.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/*.test.js",
+    "db:schema": "wrangler d1 execute jobsearch-db --remote --file=schema.sql",
+    "db:seed": "node scripts/build-seed.mjs > data/seed.sql && wrangler d1 execute jobsearch-db --remote --file=data/seed.sql",
+    "db:local": "wrangler d1 execute jobsearch-db --local --file=schema.sql && node scripts/build-seed.mjs > data/seed.sql && wrangler d1 execute jobsearch-db --local --file=data/seed.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^4.20.0"
+  }
+}

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Job Search HQ · Admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@600&family=Space+Grotesk:wght@600&display=swap">
+<link rel="stylesheet" href="/app.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23b45309'/%3E%3Cpath d='M8 22l5-6 4 3 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+</head>
+<body>
+<main class="wrap" style="gap:24px">
+  <section id="login" hidden>
+    <form class="card" id="login-form" style="max-width:380px;margin:10vh auto 0;display:grid;gap:12px">
+      <p class="eyebrow">Job Search HQ</p>
+      <h1 style="font-size:1.6rem">Admin sign-in</h1>
+      <label for="pw">Password<input id="pw" type="password" autocomplete="current-password" required></label>
+      <button type="submit">Sign in</button>
+      <span class="status" id="login-status" role="status"></span>
+    </form>
+  </section>
+
+  <section id="app" hidden style="display:grid;gap:20px">
+    <div class="topbar">
+      <div><p class="eyebrow">Job Search HQ · Admin</p><h1 style="font-size:1.6rem">Roles, companies and what's public</h1></div>
+      <div style="display:flex;gap:8px"><a href="/" target="_blank" rel="noopener"><button class="ghost" type="button">View public page</button></a><button class="ghost" type="button" id="logout">Sign out</button></div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="overview">Overview</button>
+      <button role="tab" aria-selected="false" data-tab="roles">Roles</button>
+      <button role="tab" aria-selected="false" data-tab="interviews">Interviews</button>
+      <button role="tab" aria-selected="false" data-tab="companies">Companies</button>
+      <button role="tab" aria-selected="false" data-tab="visibility">Public visibility</button>
+      <button role="tab" aria-selected="false" data-tab="requests">Access requests <span id="req-badge" class="count"></span></button>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div data-panel="overview" style="display:grid;gap:18px">
+      <div class="tiles">
+        <div class="tile"><span class="label">Applied</span><span class="value num" data-s="total">—</span><span class="sub">All time</span></div>
+        <div class="tile"><span class="label">This month</span><span class="value num" data-s="month">—</span><span class="sub">Month of latest day</span></div>
+        <div class="tile"><span class="label">This week</span><span class="value num" data-s="week">—</span><span class="sub">Monday start</span></div>
+        <div class="tile"><span class="label">Latest day</span><span class="value num" data-s="latest_day">—</span><span class="sub" data-s="latest_date">—</span></div>
+      </div>
+      <div class="pipeline">
+        <div class="stage queued"><div class="value num" data-sp="queued">—</div><div class="muted small">Queued</div></div>
+        <div class="stage"><div class="value num" data-sp="confirmed">—</div><div class="muted small">Confirmed by email</div></div>
+        <div class="stage"><div class="value num" data-sp="interview">—</div><div class="muted small">Reached interviews</div></div>
+        <div class="stage offer"><div class="value num" data-sp="offer">—</div><div class="muted small">Offers</div></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><h2>Loose ends</h2><span class="count" id="le-count"></span></div>
+        <div class="tablewrap"><table><thead><tr><th>Type</th><th>Company</th><th>Role</th><th>What's needed</th></tr></thead><tbody id="le-rows"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- INTERVIEWS -->
+    <div data-panel="interviews" hidden style="display:grid;gap:14px">
+      <p class="muted" style="margin:0">Interviews come in from email sync or from a role's "Add interview" button. Ask for a research brief before the interview and record how it went after.</p>
+      <div class="tablewrap"><table><thead><tr><th>When</th><th>Company</th><th>Role</th><th>Round</th><th>Prep</th><th>Outcome</th></tr></thead><tbody id="iv-rows"></tbody></table></div>
+    </div>
+
+    <!-- ROLES -->
+    <div data-panel="roles" hidden style="display:grid;gap:14px">
+      <div class="filters">
+        <label for="f-q">Search<input id="f-q" placeholder="Company, title or notes"></label>
+        <label for="f-stage">Stage<select id="f-stage"><option value="">All stages</option></select></label>
+        <label for="f-tier">Tier<select id="f-tier"><option value="">All tiers</option><option value="auto">Auto-ready</option><option value="quick">Tier 1 · quick</option><option value="long">Tier 2 · takes time</option></select></label>
+        <label for="f-category">Category<select id="f-category"><option value="">All categories</option></select></label>
+        <label for="f-from">Applied from<input id="f-from" type="date"></label>
+        <label for="f-to">Applied to<input id="f-to" type="date"></label>
+      </div>
+      <div class="section-head"><span class="count" id="role-count"></span><button type="button" id="add-role">Add role</button></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Stage</th><th>Company</th><th>Title</th><th>Category</th><th>Applied</th><th>By</th><th>Next step</th><th>Deadline</th></tr></thead>
+          <tbody id="role-rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- COMPANIES -->
+    <div data-panel="companies" hidden style="display:grid;gap:14px">
+      <form class="card" id="company-form">
+        <div class="form-grid">
+          <label for="c-name">Company name<input id="c-name" required maxlength="120"></label>
+          <label for="c-site">Website<input id="c-site" type="url" placeholder="https://"></label>
+          <label for="c-notes">Notes<input id="c-notes" maxlength="1000"></label>
+        </div>
+        <div class="row-actions" style="justify-content:space-between;align-items:center"><span class="status" id="c-status" role="status"></span><button type="submit">Add company</button></div>
+      </form>
+      <label for="c-filter" style="max-width:320px">Filter companies<input id="c-filter" placeholder="Type a name"></label>
+      <div class="tablewrap"><table><thead><tr><th>Company</th><th>Roles</th><th>Applied</th><th>Website</th><th>Notes</th></tr></thead><tbody id="company-rows"></tbody></table></div>
+    </div>
+
+    <!-- VISIBILITY -->
+    <div data-panel="visibility" hidden style="display:grid;gap:14px">
+      <p class="muted" style="margin:0">Choose what the public page shows. Exact job titles, pay, notes, links and your needs-you list are never public.</p>
+      <form class="card toggles" id="vis-form">
+        <label class="toggle" for="v-totals"><input type="checkbox" id="v-totals" name="totals"> <span><b>Totals</b><br><span class="muted small">Applications overall, this month, this week and on the latest day.</span></span></label>
+        <label class="toggle" for="v-daily"><input type="checkbox" id="v-daily" name="daily_chart"> <span><b>Daily chart</b><br><span class="muted small">Applications per day.</span></span></label>
+        <label class="toggle" for="v-auto"><input type="checkbox" id="v-auto" name="automation_split"> <span><b>Automatic vs. manual split</b></span></label>
+        <label class="toggle" for="v-cat"><input type="checkbox" id="v-cat" name="categories"> <span><b>Role categories</b><br><span class="muted small">Counts by category, such as Implementation or Software Engineering.</span></span></label>
+        <label class="toggle" for="v-comp"><input type="checkbox" id="v-comp" name="companies"> <span><b>Company names</b><br><span class="muted small">Shows which companies, with how many applications, but not the titles.</span></span></label>
+        <label class="toggle" for="v-pipe"><input type="checkbox" id="v-pipe" name="pipeline"> <span><b>Pipeline counts</b><br><span class="muted small">Queued, interviewing and offers.</span></span></label>
+        <label class="toggle" for="v-req"><input type="checkbox" id="v-req" name="request_form"> <span><b>"Request more access" form</b></span></label>
+        <fieldset style="border:1px solid var(--line);border-radius:8px;padding:12px"><legend class="small muted">Categories shown publicly (unticked categories are left out of every public number)</legend><div id="v-cats" class="toggles"></div></fieldset>
+        <div class="row-actions" style="justify-content:space-between;align-items:center"><span class="status" id="v-status" role="status"></span><button type="submit">Save visibility</button></div>
+      </form>
+    </div>
+
+    <!-- REQUESTS -->
+    <div data-panel="requests" hidden style="display:grid;gap:14px">
+      <div class="tablewrap"><table><thead><tr><th>When</th><th>Name</th><th>Email</th><th>Company</th><th>Request</th><th>Status</th></tr></thead><tbody id="req-rows"></tbody></table></div>
+    </div>
+  </section>
+
+  <dialog id="role-dialog">
+    <form id="role-form" method="dialog">
+      <h2 id="role-dialog-title">Role</h2>
+      <div class="form-grid" style="margin-top:14px">
+        <label for="r-company">Company<input id="r-company" name="company" required list="company-list"></label>
+        <label for="r-title">Title<input id="r-title" name="title" required maxlength="300"></label>
+        <label for="r-category">Category<select id="r-category" name="category"></select></label>
+        <label for="r-stage">Stage<select id="r-stage" name="stage"></select></label>
+        <label for="r-tier">Tier (queued roles)<select id="r-tier" name="tier"><option value="">None</option><option value="auto">Auto-ready</option><option value="quick">Tier 1 · quick</option><option value="long">Tier 2 · takes time</option></select></label>
+        <label for="r-applied">Applied date<input id="r-applied" name="applied_date" type="date"></label>
+        <label for="r-by">Submitted by<select id="r-by" name="applied_by"><option value="">—</option><option>Claude</option><option>Chris</option></select></label>
+        <label for="r-deadline">Deadline<input id="r-deadline" name="deadline" type="date"></label>
+        <label for="r-location">Location / pay<input id="r-location" name="location" maxlength="300"></label>
+        <label for="r-ats">Applied through<input id="r-ats" name="ats" maxlength="300"></label>
+        <label for="r-url">Posting link<input id="r-url" name="url" type="url" placeholder="https://"></label>
+      </div>
+      <label for="r-next" style="margin-top:12px">Next step<input id="r-next" name="next_step" maxlength="1000"></label>
+      <label for="r-notes" style="margin-top:12px">Notes<textarea id="r-notes" name="notes" maxlength="1000"></textarea></label>
+      <div id="r-history" hidden style="margin-top:14px;display:grid;gap:8px">
+        <h3 style="font-size:1rem">Timeline</h3>
+        <ul id="r-events" class="small" style="margin:0;padding-left:18px"></ul>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="ghost" data-log="confirmation">Log confirmation email</button>
+          <button type="button" class="ghost" data-log="interview_invite">Add interview</button>
+          <button type="button" class="ghost" data-log="rejection">Log rejection</button>
+          <button type="button" class="ghost" data-log="note">Add note</button>
+        </div>
+      </div>
+      <span class="status" id="r-status" role="status"></span>
+      <div class="row-actions"><button type="button" class="danger" id="r-delete">Delete</button><button type="button" class="ghost" id="r-cancel">Cancel</button><button type="submit" id="r-save">Save</button></div>
+    </form>
+  </dialog>
+  <dialog id="iv-dialog">
+    <form id="iv-form" method="dialog">
+      <h2 id="iv-title">Interview</h2>
+      <div class="form-grid" style="margin-top:14px">
+        <label for="iv-when">When<input id="iv-when" name="scheduled_at" type="datetime-local"></label>
+        <label for="iv-round">Round<input id="iv-round" name="round" placeholder="Recruiter screen, hiring manager…"></label>
+        <label for="iv-format">Format<select id="iv-format" name="format"><option value="">—</option><option>phone</option><option>video</option><option>onsite</option></select></label>
+        <label for="iv-who">Interviewer<input id="iv-who" name="interviewer"></label>
+        <label for="iv-prep">Research brief<select id="iv-prep" name="prep_status"><option value="none">Not requested</option><option value="requested">Requested</option><option value="ready">Ready</option></select></label>
+        <label for="iv-outcome">Outcome<select id="iv-outcome" name="outcome"><option value="pending">Pending</option><option value="advanced">Advanced</option><option value="rejected">Rejected</option><option value="offer">Offer</option><option value="unknown">Unknown</option></select></label>
+        <label for="iv-rating">How it went (1-5)<select id="iv-rating" name="rating"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+      </div>
+      <label for="iv-notes" style="margin-top:12px">Research brief<textarea id="iv-notes" name="prep_notes" style="min-height:140px" placeholder="Filled in by the prep run, or paste your own notes"></textarea></label>
+      <label for="iv-feedback" style="margin-top:12px">After the interview: what went well, what to improve, any feedback<textarea id="iv-feedback" name="feedback"></textarea></label>
+      <span class="status" id="iv-status" role="status"></span>
+      <div class="row-actions"><button type="button" class="ghost" id="iv-request">Request research brief</button><button type="button" class="ghost" id="iv-cancel">Cancel</button><button type="submit">Save</button></div>
+    </form>
+  </dialog>
+  <datalist id="company-list"></datalist>
+</main>
+<script src="/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+name = "jobsearch-hq"
+main = "src/worker.js"
+compatibility_date = "2025-06-01"
+workers_dev = true
+
+[[rules]]
+type = "Text"
+globs = ["**/*.html", "**/*.css", "**/*.txt"]
+fallthrough = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "jobsearch-db"
+database_id = "0082e8e5-fac4-44d4-8454-a1dd96af5970"
+
+# Secrets (set with `wrangler secret put NAME`, never committed):
+#   ADMIN_PASSWORD  - admin page password
+#   SESSION_SECRET  - random string used to sign the admin session cookie
+#   API_TOKEN       - bearer token the scheduled job-scan runs use to push roles
